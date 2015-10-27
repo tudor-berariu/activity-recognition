@@ -1,7 +1,7 @@
 #!/bin/bash
 
 RAW_FOLDER=./raw/
-mkdir -p RAW_FOLDER
+mkdir -p $RAW_FOLDER
 
 for f in `ls archives/*.tar.gz`; do
     echo -n "Extracting $f..."
