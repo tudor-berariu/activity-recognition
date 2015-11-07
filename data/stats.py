@@ -17,12 +17,14 @@ For pretty printing in a table please install terminaltables:
     pip install terminaltables
 '''
 
+from __future__ import print_function
 from os.path import join
 from os.path import isfile
 from os import walk
 from os import listdir
 from sys import argv
 import numpy
+
 
 PRETTY_PRINT = False
 try:
