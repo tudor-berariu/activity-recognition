@@ -4,6 +4,8 @@ from __future__ import print_function
 from os import mkdir, walk
 from copy import copy
 from shutil import copyfile
+from functools import reduce
+import operator
 import sys
 import os.path
 import re
@@ -34,7 +36,7 @@ def prepare_posture_dataset():
             default_tags.extend(associated_tags[tag])
 
         # Find the folders that match the major class (tag)
-        tag_filter = lambda dirname : dirname.upper().endswith("/" + tag.upper())
+        tag_filter = lambda dirname: dirname.upper().endswith("/" + tag.upper())
         for exp in [r for (r, _, _) in walk(src_dir) if tag_filter(r)]:
             for (r, fs) in [(r, fs) for (r, _, fs) in walk(exp) if fs]:
                 # Compute all tags for current folder
@@ -59,8 +61,56 @@ def prepare_posture_dataset():
 
     print("Done")
 
+def choose_action_tag(tag1, tag2):
+    bad_pairs = [["down", "up"], ["sitting", "standing"]]
+    if tag1 != tag2 and sorted([tag1, tag2]) in bad_pairs:
+        print("This should not happen: %s vs %s!!!" % (tag1, tag2))
+        return None
+    elif "down" in [tag1, tag2]:
+        return "down"
+    elif "up" in [tag1, tag2]:
+        return "up"
+    else:
+        print("Unhandled behavior")
+
 def prepare_action_dataset():
     print("Preparing action dataset")
+    mkdir("datasets/action")
+
+    src_dir = sys.argv[1]
+    idx = 0
+    count = 0
+    conc = lambda x, y: list(x) + list(y)
+    different_tags = {}
+    # Take each folder that contains a direct subfolder with an action name
+    is_parent_dir = lambda ds: any([tag in ds for tag in action_tags])
+    for d in [r for (r,ds,_) in walk(src_dir) if is_parent_dir(ds)]:
+        # Create experiment directory
+        root_dir = "datasets/action/%03d/" % idx
+        idx = idx + 1
+        mkdir(root_dir)
+        # Go through all files
+        files = [list(map(lambda x: os.path.join(r2, x), fs)) for (r2,_,fs) in walk(d)]
+        all_files = {}
+        for f in reduce(conc, files):
+            count += 1
+            jpg = f.split("/")[-1]
+            crt_tag = f.split("/")[-3]
+            different_tags[crt_tag] = 1
+            if jpg in all_files:
+                # Same file occurs with two tags
+                winner_tag = choose_action_tag(crt_tag, all_files[jpg]["tag"])
+                if winner_tag == crt_tag:
+                    all_files[jpg] = {"path": f, "tag": crt_tag}
+            else:
+                all_files[jpg] = {"path": f, "tag": crt_tag}
+        # Copy files
+        with open(os.path.join(root_dir, "info"), "w") as out:
+            for (jpg, info) in sorted(all_files.items(), key=operator.itemgetter(0)):
+                copyfile(info["path"], os.path.join(root_dir, jpg))
+                out.write("%s,%s\n" % (jpg, info["tag"]))
+    print(different_tags)
+    print("Copied all %d files!" % count)
     print("Done")
     pass
 
