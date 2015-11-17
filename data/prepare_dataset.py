@@ -24,9 +24,13 @@ extra_tags = {
 
 def prepare_posture_dataset():
     print("Preparing posture dataset")
-    mkdir("datasets/posture")
 
     src_dir = sys.argv[1]
+    if not os.path.isdir(src_dir):
+    	print("[ERROR] Invalid input folder")
+    	exit()
+    mkdir("datasets/posture")
+
     dataset_info = {}
 
     for tag in posture_tags:
@@ -117,9 +121,13 @@ def prepare_action_dataset():
 
 if __name__ == "__main__":
     print("Preparing data sets...")
+    # Check input folder
+    if len(sys.argv) < 2:
+    	print("[ERROR] Please provide an input folder")
+    	exit()
     # Check if folder already exists
     if os.path.exists("datasets"):
-        print("Folder 'datasets' exists! Solve this first (by deleting it)!")
+        print("[ERROR] Folder 'datasets' exists! Solve this first (by deleting it)!")
         exit()
     os.mkdir("datasets")
     # Create datasets
