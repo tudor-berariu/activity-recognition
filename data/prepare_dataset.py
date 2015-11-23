@@ -28,7 +28,6 @@ def prepare_posture_dataset():
     mkdir("datasets/posture")
 
     dataset_info = {}
-
     for tag in posture_tags:
         # Compute the full list of default tags
         default_tags = [tag]
@@ -116,7 +115,7 @@ if __name__ == "__main__":
     print("Preparing data sets...")
     # Check if folder already exists
     if exists("datasets"):
-        print("Folder 'datasets' exists! Solve this first (by deleting it)!")
+        print("[ERROR] Folder 'datasets' exists! Solve this first (by deleting it)!")
         exit()
     mkdir("datasets")
     # Create datasets
