@@ -2,13 +2,16 @@
 
 from __future__ import print_function
 from os import mkdir, walk
+from os.path import join, exists
 from copy import copy
 from shutil import copyfile
 from functools import reduce
 import operator
 import sys
-import os.path
 import re
+
+# Source directory (raw)
+SRC_DIR = "./raw/"
 
 # Major class tags
 posture_tags = ["sitting", "standing"]
@@ -18,15 +21,12 @@ action_tags = ["up", "down"]
 associated_tags = {"sitting": ["chair"], "standing": ["chair"]}
 
 # Write some regular expressions that match folder names for extra tags
-extra_tags = {
-    'table' : [".*masa.*"]
-}
+extra_tags = {'table' : [".*masa.*"]}
 
 def prepare_posture_dataset():
     print("Preparing posture dataset")
     mkdir("datasets/posture")
 
-    src_dir = sys.argv[1]
     dataset_info = {}
 
     for tag in posture_tags:
@@ -37,7 +37,7 @@ def prepare_posture_dataset():
 
         # Find the folders that match the major class (tag)
         tag_filter = lambda dirname: dirname.upper().endswith("/" + tag.upper())
-        for exp in [r for (r, _, _) in walk(src_dir) if tag_filter(r)]:
+        for exp in [r for (r, _, _) in walk(SRC_DIR) if tag_filter(r)]:
             for (r, fs) in [(r, fs) for (r, _, fs) in walk(exp) if fs]:
                 # Compute all tags for current folder
                 folder_tags = copy(default_tags)
@@ -51,12 +51,12 @@ def prepare_posture_dataset():
                     name = f
                     while name in dataset_info:
                         name = name[:-4] + "_" + name[-4:]
-                    dataset_info[name] = (os.path.join(r,f), copy(folder_tags))
+                    dataset_info[name] = (join(r,f), copy(folder_tags))
 
     # Write all to file and copy images
     with open("datasets/posture/info", "w") as out:
         for (f, info) in dataset_info.items():
-            copyfile(info[0], os.path.join("datasets/posture/", f))
+            copyfile(info[0], join("datasets/posture/", f))
             out.write(f + "," + ",".join(info[1]) + "\n")
 
     print("Done")
@@ -71,57 +71,54 @@ def choose_action_tag(tag1, tag2):
     elif "up" in [tag1, tag2]:
         return "up"
     else:
-        print("Unhandled behavior")
+        raise Exception("Unhandled behavior")
 
 def prepare_action_dataset():
     print("Preparing action dataset")
     mkdir("datasets/action")
 
-    src_dir = sys.argv[1]
     idx = 0
     count = 0
     conc = lambda x, y: list(x) + list(y)
     different_tags = {}
     # Take each folder that contains a direct subfolder with an action name
     is_parent_dir = lambda ds: any([tag in ds for tag in action_tags])
-    for d in [r for (r,ds,_) in walk(src_dir) if is_parent_dir(ds)]:
+    for d in [r for (r,ds,_) in walk(SRC_DIR) if is_parent_dir(ds)]:
         # Create experiment directory
         root_dir = "datasets/action/%03d/" % idx
         idx = idx + 1
         mkdir(root_dir)
         # Go through all files
-        files = [list(map(lambda x: os.path.join(r2, x), fs)) for (r2,_,fs) in walk(d)]
-        all_files = {}
-        for f in reduce(conc, files):
+        sets = [list(map(lambda x: join(r2, x), fs)) for (r2,_,fs) in walk(d)]
+        files = {}
+        for f in reduce(conc, sets):
             count += 1
             jpg = f.split("/")[-1]
             crt_tag = f.split("/")[-3]
             different_tags[crt_tag] = 1
-            if jpg in all_files:
+            if jpg in files:
                 # Same file occurs with two tags
-                winner_tag = choose_action_tag(crt_tag, all_files[jpg]["tag"])
+                winner_tag = choose_action_tag(crt_tag, files[jpg]["tag"])
                 if winner_tag == crt_tag:
-                    all_files[jpg] = {"path": f, "tag": crt_tag}
+                    files[jpg] = {"path": f, "tag": crt_tag}
             else:
-                all_files[jpg] = {"path": f, "tag": crt_tag}
+                files[jpg] = {"path": f, "tag": crt_tag}
         # Copy files
-        with open(os.path.join(root_dir, "info"), "w") as out:
-            for (jpg, info) in sorted(all_files.items(), key=operator.itemgetter(0)):
-                copyfile(info["path"], os.path.join(root_dir, jpg))
+        with open(join(root_dir, "info"), "w") as out:
+            for (jpg,info) in sorted(files.items(), key=operator.itemgetter(0)):
+                copyfile(info["path"], join(root_dir, jpg))
                 out.write("%s,%s\n" % (jpg, info["tag"]))
     print(different_tags)
     print("Copied all %d files!" % count)
     print("Done")
-    pass
-
 
 if __name__ == "__main__":
     print("Preparing data sets...")
     # Check if folder already exists
-    if os.path.exists("datasets"):
+    if exists("datasets"):
         print("Folder 'datasets' exists! Solve this first (by deleting it)!")
         exit()
-    os.mkdir("datasets")
+    mkdir("datasets")
     # Create datasets
     prepare_posture_dataset()
     prepare_action_dataset()
