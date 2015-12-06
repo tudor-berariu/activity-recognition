@@ -46,10 +46,10 @@ function conv_net_models.get_network(args)
       --- a last fully connected layer
       model:add(nn.Reshape(128 * height * width))
       model:add(nn.Linear(128 * height * width, classes_no))
-      model:add(nn.Tanh())
+      -- model:add(nn.Tanh())
    end
 
-   model:add(nn.LogSoftMax())
+   model:add(nn.SoftMax())
    return model
 end
 
