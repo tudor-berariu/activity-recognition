@@ -118,6 +118,7 @@ end
     - use_cache  : boolean, default: true
     - just_names : boolean, default: false
     - verbose    : boolean, default: false
+    - one_of_k   : boolean, default: false
 --]]
 
 function activity_dataset.get_posture_dataset(args)
@@ -156,13 +157,18 @@ function activity_dataset.get_posture_dataset(args)
    ---------------------------------------------------------
    -- use cache or get images from files
    local use_cache = args.use_cache or true
-   local suffix, full_suffix
+   local suffix, full_suffix, lsuffix
    if args.limit then
       suffix = "_" .. args.limit .. ".dat"
       full_suffix = height .. "x" .. width .. "_" .. args.limit .. ".dat"
    else
       suffix = ".dat"
       full_suffix = height .. "x" .. width .. ".dat"
+   end
+   if args.one_of_k then
+      lsuffix = "_k" .. suffix
+   else
+      lsuffix = suffix
    end
 
    if verbose then
@@ -178,7 +184,7 @@ function activity_dataset.get_posture_dataset(args)
       local classes_file = io.open(cache_path .. "classes" .. suffix)
       if not classes_file then use_cache = false else classes_file.close() end
 
-      local labels_file = io.open(cache_path .. "labels" .. suffix)
+      local labels_file = io.open(cache_path .. "labels" .. lsuffix)
       if not labels_file then use_cache = false else labels_file.close() end
 
       local stats_file = io.open(cache_path .. "stats" .. full_suffix)
@@ -203,11 +209,16 @@ function activity_dataset.get_posture_dataset(args)
 
    if use_cache then
       classes = assert(torch.load(cache_path .. "classes" .. suffix))
-      labels = assert(torch.load(cache_path .. "labels" .. suffix))
+      labels = assert(torch.load(cache_path .. "labels" .. lsuffix))
       stats = assert(torch.load(cache_path .. "stats" .. full_suffix))
 
       assert(stats.N == labels:size(1))
-      assert(stats.K == labels:size(2))
+      if args.one_of_k then
+         assert(labels:nDimension() == 1)
+         assert(stats.K == labels:size(2))
+      else
+         assert(labels:nDimension() == 1)
+      end
 
       if args.just_names then
          names = assert(torch.load(cache_path .. "names" .. suffix))
@@ -237,7 +248,11 @@ function activity_dataset.get_posture_dataset(args)
       images = torch.Tensor(lines_no, height, width) -- tensor with all images
    end
    classes = {}                          -- class correspondence
-   labels = torch.Tensor(lines_no, 1)
+   if args.one_of_k then
+      labels = torch.Tensor(lines_no, 1)
+   else
+      labels = torch.Tensor(lines_no)
+   end
    stats = {["mean"] = 0, ["stddev"] = 0, ["K"] = 0, ["N"] = 0} -- stats
 
    info = assert(io.open(path .. "info"))
@@ -267,14 +282,20 @@ function activity_dataset.get_posture_dataset(args)
 
             is_first = false
          else  -- other words are labels
-            if not classes[word] then
+            if not classes[word] and (not args.filter or args.filter[word]) then
                stats.K = stats.K + 1
                classes[word] = stats.K
-               if stats.K > labels:size(2) then
+               if args.one_of_k and stats.K > labels:size(2) then
                   labels = torch.cat(labels, torch.zeros(labels:size()), 2)
                end
             end
-            labels[stats.N][classes[word]] = 1
+            if not args.filter or args.filter[word] then
+               if args.one_of_k then
+                  labels[stats.N][classes[word]] = 1
+               else
+                  labels[stats.N] = classes[word]
+               end
+            end
          end -- if is_first
       end -- for word
 
@@ -285,7 +306,11 @@ function activity_dataset.get_posture_dataset(args)
    stats.mean = stats.mean / stats.N
    stats.stddev = math.sqrt(stats.stddev / stats.N - stats.mean * stats.mean)
 
-   labels = labels[{{1, stats.N}, {1, stats.K}}]
+   if args.one_of_k then
+      labels = labels[{{1, stats.N}, {1, stats.K}}]
+   else
+      labels = labels[{{1, stats.N}}]
+   end
    if args.just_names then
       assert(#names == stats.N)
    else
@@ -303,7 +328,7 @@ function activity_dataset.get_posture_dataset(args)
 
    assert(os.execute("mkdir -p " .. cache_path))
    torch.save(cache_path .. "classes" .. suffix, classes)
-   torch.save(cache_path .. "labels" .. suffix, labels)
+   torch.save(cache_path .. "labels" .. lsuffix, labels)
    torch.save(cache_path .. "stats" .. full_suffix, stats)
    if args.just_names then
       torch.save(cache_path .. "names" .. suffix, names)
