@@ -119,6 +119,7 @@ end
     - just_names : boolean, default: false
     - verbose    : boolean, default: false
     - one_of_k   : boolean, default: false
+    - filter     : table,   default: nil
 --]]
 
 function activity_dataset.get_posture_dataset(args)

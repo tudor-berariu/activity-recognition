@@ -37,7 +37,7 @@ do
    -- show one image
    local util = require("util")
    captions = util.reverse_table(classes2)
-   
+
    image.display{image=images2[idx], win=win_input, zoom=4,
                  legend=captions[labels2[idx]]}
 end
