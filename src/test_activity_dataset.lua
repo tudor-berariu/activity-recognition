@@ -13,7 +13,8 @@ do
       ["just_names"] = true,
       ["limit"] = 200,
       ["size"] = 1,
-      ["filter"] = {["standing"] = true, ["sitting"] = true}
+      ["filter"] = {["standing"] = true, ["sitting"] = true},
+      ["one_of_k"] = true
    }
    local idx = torch.random(args.limit)
    -- get by name
@@ -25,6 +26,7 @@ do
    -- get images
    local images2, classes2, labels2, stats2
    args["just_names"] = false
+   args["one_of_k"] = false
    images2, classes2, labels2, stats2 = ds.get_posture_dataset(args)
    my_print("Done (2/2)")
    -- compare results

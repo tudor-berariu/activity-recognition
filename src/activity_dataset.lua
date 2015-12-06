@@ -215,7 +215,7 @@ function activity_dataset.get_posture_dataset(args)
 
       assert(stats.N == labels:size(1))
       if args.one_of_k then
-         assert(labels:nDimension() == 1)
+         assert(labels:nDimension() == 2)
          assert(stats.K == labels:size(2))
       else
          assert(labels:nDimension() == 1)
@@ -250,9 +250,9 @@ function activity_dataset.get_posture_dataset(args)
    end
    classes = {}                          -- class correspondence
    if args.one_of_k then
-      labels = torch.Tensor(lines_no, 1)
+      labels = torch.zeros(lines_no, 1)
    else
-      labels = torch.Tensor(lines_no)
+      labels = torch.zeros(lines_no)
    end
    stats = {["mean"] = 0, ["stddev"] = 0, ["K"] = 0, ["N"] = 0} -- stats
 
