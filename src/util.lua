@@ -18,7 +18,7 @@ end
 
 --]]
 
-function util.equal_tables(t1, t2)
+function util.shallow_eq(t1, t2)
    for k1, v1 in pairs(t1) do
       if not t2[k1] or t2[k1] ~= v1 then return false end
    end
@@ -28,7 +28,7 @@ function util.equal_tables(t1, t2)
    return true
 end
 
-assert(util.equal_tables(
+assert(util.shallow_eq(
           {["a"] = 2, ["b"] = 3},
           util.reverse_table(util.reverse_table({["b"] = 3, ["a"] = 2}))
 ))
