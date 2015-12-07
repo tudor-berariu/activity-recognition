@@ -6,6 +6,12 @@ local module util = {}
 
 --]]
 
+--[[
+
+   Reverse a table: keys become values and values become keys.
+
+--]]
+
 function util.reverse_table(t)
    local u = {}
    for k, v in pairs(t) do u[v] = k end
