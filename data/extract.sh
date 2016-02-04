@@ -6,7 +6,7 @@ mkdir -p $RAW_FOLDER
 for f in `ls archives/*.tar.gz`; do
     echo -n "Extracting $f..."
     tar -zxf $f -C $RAW_FOLDER
-    echo "... done!" 
+    echo "... done!"
 done
 
 for f in `ls archives/*.zip`; do
