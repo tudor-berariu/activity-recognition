@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# This script is both Python2 and Python3 compatible
+
 from __future__ import print_function
 from os import mkdir, walk
 from os.path import join, exists
@@ -58,6 +60,8 @@ def prepare_posture_dataset():
             copyfile(info[0], join("datasets/posture/", f))
             out.write(f + "," + ",".join(info[1]) + "\n")
 
+    # That's all, folks!
+    print("Copied all %d files!" % len(dataset_info))
     print("Done")
 
 def choose_action_tag(tag1, tag2):
@@ -87,6 +91,7 @@ def prepare_action_dataset():
         root_dir = "datasets/action/%03d/" % idx
         idx = idx + 1
         mkdir(root_dir)
+
         # Go through all files
         sets = [list(map(lambda x: join(r2, x), fs)) for (r2,_,fs) in walk(d)]
         files = {}
@@ -102,22 +107,27 @@ def prepare_action_dataset():
                     files[jpg] = {"path": f, "tag": crt_tag}
             else:
                 files[jpg] = {"path": f, "tag": crt_tag}
+
         # Copy files
         with open(join(root_dir, "info"), "w") as out:
             for (jpg,info) in sorted(files.items(), key=operator.itemgetter(0)):
                 copyfile(info["path"], join(root_dir, jpg))
                 out.write("%s,%s\n" % (jpg, info["tag"]))
-    print(different_tags)
-    print("Copied all %d files!" % count)
+
+    print("Found the following tags: %s" %
+          ", ".join([k for (k,_) in different_tags.items()]))
+    print("Copied %d files!" % count)
     print("Done")
 
 if __name__ == "__main__":
     print("Preparing data sets...")
+
     # Check if folder already exists
     if exists("datasets"):
-        print("[ERROR] Folder 'datasets' exists! Solve this first (by deleting it)!")
+        print("[ERROR] Folder 'datasets' exists!")
         exit()
     mkdir("datasets")
+
     # Create datasets
     prepare_posture_dataset()
     prepare_action_dataset()
