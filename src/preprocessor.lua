@@ -1,42 +1,88 @@
+--------------------------------------------------------------------------------
+--- 1. Load required libraries
+
 local class = require("class")
+
+--------------------------------------------------------------------------------
+--- 2. Define the preprocessor class
+---
+--- The preprocessor applies individual transformations to each image.
+--- Other preprocessing like scaling or standardization should be applied to all
+--- images somewhere else.
+
 Preprocessor = class("Preprocessor")
 
-function Preprocessor:__init(args)
-   args = args or {}
+function Preprocessor:__init(in_height, in_width, opt)
+   self.verbose = opt.verbose
+   -----------------------------------------------------------------------------
+   --- A. Crop
 
-   local in_height = args.heigth or 96
-   local in_width = args.widht or 128
+   if opt.vert_crop_ratio then
+      self.vert_crop = torch.floor(in_height * opt.vert_crop_ratio)
+   else
+      self.vert_crop = opt.vert_crop or false
+   end
 
-   -- crop to given size (given crop size should be less or equal than original)
-   self.vert_crop = in_height - (args.crop_height or 5)
-   self.horiz_crop = in_width - (args.crop_width or 37)
-   self.height = in_height - self.vert_crop
-   self.width = in_width - self.horiz_crop
+   if opt.horiz_crop_ratio then
+      self.horiz_crop = torch.floor(in_width * opt.horiz_crop_ratio)
+   else
+      self.horiz_crop = opt.horiz_crop or false
+   end
 
-   -- flip?
-   self.flip = args.flip or false
-end
+   if self.vert_crop then
+      self.height = in_height - self.vert_crop
+   else
+      self.height = in_height
+   end
 
-   -- function to extract (scale and crop) images
+   if self.horiz_crop then
+      self.width = in_width - self.horiz_crop
+   else
+      self.width = in_width
+   end
 
-function Preprocessor:process_batch(imgs)
+   -- horizontally flip the image?
+   self.flip = opt.flip or false
+
+   self:print("Final size: " .. self.height .. "x" .. self.width)
+   self:print("Flip: " .. tostring(self.flip))
+ end
+
+function Preprocessor:process_image(dest_img, src_img)
+   -- load needed modules
    local image = require("image")
-   local up, left, img2, oimgs
 
-   oimgs = torch.Tensor(imgs:size(1), imgs:size(2), self.height, self.width)
-   for i = 1, imgs:size(1) do
-      -- crop
-      up = torch.random(1 + self.vert_crop) - 1
-      left = torch.random(1 + self.horiz_crop) - 1
-      img2 = image.crop(imgs[i], left, up, left+self.width, up+self.height)
-      -- flip
-      if self.flip and math.random() > 0.5 then
-         oimgs[i] = image.flip(img2, 2)
+   if self.vert_crop or self.horiz_crop then
+      local up = torch.random(1 + self.vert_crop) - 1
+      local left = torch.random(1 + self.horiz_crop) - 1
+
+      if self.flip and (math.random() > 0.5) then
+         image.hflip(
+            dest_img,
+            image.crop(src_img, left, up, left + self.width, up + self.height)
+         )
       else
-         oimgs[i] = img2
-      end -- flip
-   end -- for i
-   return oimgs
+         image.crop(
+            dest_img, src_img,
+            left, up,
+            left + self.width, up + self.height
+         )
+      end -- if flip
+   else
+      if self.flip and math.random() > 0.5 then
+         image.hflip(dest_img, src_img)
+      else
+         dest_img:copy(src_img)
+      end -- if flip
+   end -- if crop
 end
 
-return true
+function Preprocessor:print(message)
+   if self.verbose then
+      print("[preprocessor] " .. message)
+   end
+end
+
+
+
+return Preprocessor
