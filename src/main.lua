@@ -27,8 +27,11 @@ cmd:option("-no_cache", false, "use tensors cached on disk (if they exist)")
 cmd:option("-limit", 0, "include only the first n images in the dataset")
 cmd:option("-one_output", false, "encode targets as single values; def: 1-of-k")
 cmd:option("-just_names", false, "do not load images, but only their names")
-cmd:option("-test_ratio", 0.2, "the ratio used for testing")
+cmd:option("-test_ratio", 0.2, "test set")
+cmd:option("-valid_ratio", 0.1, "validation set")
 cmd:option("-shuffle", false, "shuffle all before train / valid / test split")
+cmd:option("-all_tags", false, "learn other tags, not just the the first one")
+cmd:option("-scale", 0.1, "what scale?")
 
 --- Dataset augmentation
 

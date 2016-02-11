@@ -17,32 +17,23 @@ function Preprocessor:__init(in_height, in_width, opt)
    -----------------------------------------------------------------------------
    --- A. Crop
 
-   if opt.vert_crop_ratio then
+   if opt.vert_crop then                                  -- fixed vertical crop
+      self.vert_crop = opt.vert_crop
+   else                                                   -- vertical crop ratio
       self.vert_crop = torch.floor(in_height * opt.vert_crop_ratio)
-   else
-      self.vert_crop = opt.vert_crop or false
    end
 
-   if opt.horiz_crop_ratio then
+   self.height = in_height - self.vert_crop
+
+   if opt.horiz_crop then
+      self.horiz_crop = opt.horiz_crop
+   else
       self.horiz_crop = torch.floor(in_width * opt.horiz_crop_ratio)
-   else
-      self.horiz_crop = opt.horiz_crop or false
    end
 
-   if self.vert_crop then
-      self.height = in_height - self.vert_crop
-   else
-      self.height = in_height
-   end
+   self.width = in_width - self.horiz_crop
 
-   if self.horiz_crop then
-      self.width = in_width - self.horiz_crop
-   else
-      self.width = in_width
-   end
-
-   -- horizontally flip the image?
-   self.flip = opt.flip or false
+   self.flip = opt.flip or false                              -- horizontal flip
 
    self:print("Final size: " .. self.height .. "x" .. self.width)
    self:print("Flip: " .. tostring(self.flip))

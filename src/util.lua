@@ -57,4 +57,14 @@ assert(util.shallow_eq(
           util.reverse_table(util.reverse_table({["b"] = 3, ["a"] = 2}))
 ))
 
+--[[
+
+   Round numbers to a specific number of decimals
+
+--]]
+
+function util.round(n, d)
+   return torch.round(n * math.pow(10, d)) / math.pow(10, d)
+end
+
 return util
