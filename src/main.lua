@@ -82,14 +82,15 @@ ds = ActivityDataset(opt)
 
 if opt.see_data then
    require("image")
-
+   ds:reset_batch("train")
    repeat
-      local X, T = ds:update_batch()
+      local X, T = ds:update_batch("train")
       local band = X[1]:clone()
       for i=2,ds.batch_size do
          band = torch.cat(band, X[i])
       end
       win = image.display{image=band, win=win, zoom=0.5, legend='batch'}
+      print("$")
    until ds.epoch_finished
 end -- if opt.see_data
 

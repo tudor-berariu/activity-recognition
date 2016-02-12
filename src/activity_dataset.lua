@@ -161,11 +161,13 @@ function ActivityDataset:__init(opt)
       misc_prefix = split_info .. misc_prefix
    end
 
-   do                                                -- attach scale information
+   --[[
+      do                                             -- attach scale information
       local scale_prefix = self.height .. "x" .. self.width .. "_"
       images_prefix = scale_prefix .. images_prefix
       misc_prefix = scale_prefix .. misc_prefix
-   end
+      end
+   --]]
 
    do                                              -- atach info about data size
       names_prefix = self.all_no .. "_" .. names_prefix
@@ -483,19 +485,32 @@ end
    memory.
 --]]
 
-function ActivityDataset:update_batch()
+function ActivityDataset:update_batch(subset)
    local image = require("image")
+
+   local first_idx, last_idx
+   if subset == "train" then
+      first_idx = 1
+      last_idx = self.train_no
+   elseif subset == "valid" then
+      first_idx = self.train_no + 1
+      last_idx = self.train_no + self.valid_no
+   else
+      first_idx = self.train_no + self.valid_no + 1
+      last_idx = self.all_no
+   end
 
    --- Compute the indexes for the next batch of examples
    if self.contiguous then
-      self.idx = self.idx or 1      self._idxs = torch.linspace(
+      self.idx = self.idx or first_idx
+      self._idxs = torch.linspace(
          self.idx,
          self.idx + self.batch_size - 1,
          self.batch_size
       ):long()
 
       self.idx = self.idx + self.batch_size
-      if self.idx > (self.stats.N - self.batch_size + 1) then
+      if self.idx > last_idx then
          self.idx = 1
          self.epoch_finished = true
       else
@@ -503,7 +518,9 @@ function ActivityDataset:update_batch()
       end
 
    else
-      self._idxs = torch.rand(self.batch_size):mul(self.stats.N):ceil():long()
+      self._idxs = torch.rand(self.batch_size):mul(last_idx - first_idx)
+         :ceil():add(first_idx - 1):long()
+      self.epoch_finished = true
    end
 
    --- Prepare targets
@@ -527,9 +544,18 @@ function ActivityDataset:update_batch()
    return self.X, self.T
 end
 
+function ActivityDataset:reset_batch(subset)
+   if subset == "train" then
+      self.idx = 1
+   elseif subset == "valid" then
+      self.idx = train_no + 1
+   else
+      self.idx = train_no + valid_no + 1
+   end
+end
+
 function ActivityDataset:display_info()
    for n,c in pairs(self.classes) do
       print(n .. "=>" .. c)
    end
-
 end
