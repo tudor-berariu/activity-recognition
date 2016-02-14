@@ -12,26 +12,26 @@ local class = require("class")
 
 Preprocessor = class("Preprocessor")
 
-function Preprocessor:__init(in_height, in_width, opt)
+function Preprocessor:__init(height, width, opt)
    self.verbose = opt.verbose
    -----------------------------------------------------------------------------
    --- A. Crop
 
-   if opt.vert_crop then                                  -- fixed vertical crop
-      self.vert_crop = opt.vert_crop
+   if opt.vertCrop then                                   -- fixed vertical crop
+      self.vertCrop = opt.vertCrop
    else                                                   -- vertical crop ratio
-      self.vert_crop = torch.floor(in_height * opt.vert_crop_ratio)
+      self.vertCrop = torch.floor(height * opt.vertCropRatio)
    end
 
-   self.height = in_height - self.vert_crop
+   self.height = height - self.vertCrop
 
-   if opt.horiz_crop then
-      self.horiz_crop = opt.horiz_crop
+   if opt.horizCrop then
+      self.horizCrop = opt.horizCrop
    else
-      self.horiz_crop = torch.floor(in_width * opt.horiz_crop_ratio)
+      self.horizCrop = torch.floor(width * opt.horizCropRatio)
    end
 
-   self.width = in_width - self.horiz_crop
+   self.width = width - self.horizCrop
 
    self.flip = opt.flip or false                              -- horizontal flip
 
@@ -39,31 +39,31 @@ function Preprocessor:__init(in_height, in_width, opt)
    self:print("Flip: " .. tostring(self.flip))
  end
 
-function Preprocessor:process_image(dest_img, src_img)
+function Preprocessor:processImage(destImg, srcImg)
    -- load needed modules
    local image = require("image")
 
-   if self.vert_crop or self.horiz_crop then
-      local up = torch.random(1 + self.vert_crop) - 1
-      local left = torch.random(1 + self.horiz_crop) - 1
+   if self.vertCrop or self.horizCrop then
+      local up = torch.random(1 + self.vertCrop) - 1
+      local left = torch.random(1 + self.horizCrop) - 1
 
       if self.flip and (math.random() > 0.5) then
          image.hflip(
-            dest_img,
-            image.crop(src_img, left, up, left + self.width, up + self.height)
+            destImg,
+            image.crop(srcImg, left, up, left + self.width, up + self.height)
          )
       else
          image.crop(
-            dest_img, src_img,
+            destImg, srcImg,
             left, up,
             left + self.width, up + self.height
          )
       end -- if flip
    else
       if self.flip and math.random() > 0.5 then
-         image.hflip(dest_img, src_img)
+         image.hflip(destImg, srcImg)
       else
-         dest_img:copy(src_img)
+         destImg:copy(srcImg)
       end -- if flip
    end -- if crop
 end
@@ -73,7 +73,5 @@ function Preprocessor:print(message)
       print("[preprocessor] " .. message)
    end
 end
-
-
 
 return Preprocessor
