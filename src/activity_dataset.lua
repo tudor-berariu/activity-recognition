@@ -76,6 +76,9 @@ function ActivityDataset:__init(opt)
    local firstImageName = line:sub(1, line:find(",")-1)           -- ignore tags
    local firstImage = image.load(self.path .. firstImageName)[{{1}}]
 
+   self:print("original size: " ..
+                 firstImage:size(2) .. "x" .. firstImage:size(3))
+
    self:setResolution(firstImage:size(), opt)   -- assume all have the same size
    assert(self.height > 0 and self.width > 0)           -- check the two members
 
@@ -152,6 +155,7 @@ function ActivityDataset:__init(opt)
       miscPrefix = "all_" .. miscPrefix
    end
 
+   --[[
    do                                                        -- apend split info
       local fmt = "%.2f_%.2f_%.2f_"
       local splitInfo = fmt:format(trainRatio, validRatio, testRatio)
@@ -160,14 +164,13 @@ function ActivityDataset:__init(opt)
       labelsPrefix = splitInfo .. labelsPrefix
       miscPrefix = splitInfo .. miscPrefix
    end
-
-   --[[
-      do                                             -- attach scale information
-      local scale_prefix = self.height .. "x" .. self.width .. "_"
-      imagesPrefix = scale_prefix .. imagesPrefix
-      miscPrefix = scale_prefix .. miscPrefix
-      end
    --]]
+
+   do                                                -- attach scale information
+      local scalePrefix = self.height .. "x" .. self.width .. "_"
+      imagesPrefix = scalePrefix .. imagesPrefix
+      miscPrefix = scalePrefix .. miscPrefix
+   end
 
    do                                              -- atach info about data size
       namesPrefix = self.allNo .. "_" .. namesPrefix
