@@ -16,8 +16,9 @@ function Preprocessor:__init(height, width, opt)
    self.verbose = opt.verbose
    -----------------------------------------------------------------------------
    --- A. Crop
+   -----------------------------------------------------------------------------
 
-   if opt.vertCrop then                                   -- fixed vertical crop
+   if opt.vertCrop > 0 then                               -- fixed vertical crop
       self.vertCrop = opt.vertCrop
    else                                                   -- vertical crop ratio
       self.vertCrop = torch.floor(height * opt.vertCropRatio)
@@ -25,7 +26,7 @@ function Preprocessor:__init(height, width, opt)
 
    self.height = height - self.vertCrop
 
-   if opt.horizCrop then
+   if opt.horizCrop > 0 then
       self.horizCrop = opt.horizCrop
    else
       self.horizCrop = torch.floor(width * opt.horizCropRatio)
@@ -33,6 +34,9 @@ function Preprocessor:__init(height, width, opt)
 
    self.width = width - self.horizCrop
 
+   -----------------------------------------------------------------------------
+   --- B. Flip
+   -----------------------------------------------------------------------------
    self.flip = opt.flip or false                              -- horizontal flip
 
    self:print("Final size: " .. self.height .. "x" .. self.width)

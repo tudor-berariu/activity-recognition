@@ -5,8 +5,7 @@ require("torch")
 
 require("activity_dataset")
 train = require("train")
-
-getLogistic = require("models/logistic")
+evaluate = require("evaluate")
 
 
 --------------------------------------------------------------------------------
@@ -93,21 +92,28 @@ if opt.seeData then
       for i=2,dataset.batchSize do
          band = torch.cat(band, X[i])
       end
-      win = image.display{image=band, win=win, zoom=0.5, legend='batch'}
-      print("$")
+      win = image.display{image=band, win=win, zoom=1, legend='batch'}
    until dataset.epochFinished
-else
-   local model
-   if opt.model == "logistic" then
-      model, criterion = getLogistic(dataset, opt)
-   end
-
-   local criterion = nn.ClassNLLCriterion()
-
-   print(model)
-
-   train(dataset, model, criterion, opt)
+   os.exit()
 end -- if opt.seeData
+
+
+local getModel, model, criterion
+
+if opt.model == "logistic" then
+   getModel = require("models/logistic")
+else
+   getModel = require("models/convnet1")
+end
+
+
+model = getModel(dataset, opt)
+criterion = nn.ClassNLLCriterion()
+
+print(model)
+
+train(dataset, model, criterion, opt)
+evaluate(dataset, mdoel, criterion, opt)
 
 
 --------------------------------------------------------------------------------
