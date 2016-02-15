@@ -24,6 +24,10 @@ function ActivityDataset:__init(opt)
    --- A. Configuration
    -----------------------------------------------------------------------------
 
+   if opt.gpuid > 0 then
+      require("cutorch")
+   end
+
    self.verbose = opt.verbose                      -- write sutff as they happen
    self.batchSize = opt.batchSize                                  -- batch size
    self.contiguous = opt.contiguous               -- batches are served in order
@@ -94,6 +98,10 @@ function ActivityDataset:__init(opt)
    self.X = torch.Tensor(                    -- allocate memory for batch tensor
       self.batchSize, self.fmaps, self.inHeight, self.inWidth
    )
+
+   if opt.gpuid > 0 then                                 -- if GPU is to be used
+      self.X = self.X:cuda()                                    -- move X on GPU
+   end
 
    -----------------------------------------------------------------------------
    --- D. Split info
@@ -231,10 +239,12 @@ function ActivityDataset:__init(opt)
       assert(self.misc.height == self.height)
       assert(self.misc.width == self.width)
       assert(self.misc.allNo == self.allNo)
-      assert(self.misc.trainNo == self.trainNo)
-      assert(self.misc.validNo == self.validNo)
-      assert(self.misc.testNo == self.testNo)
       self.classesNo = self.misc.classesNo
+
+      self.misc.trainNo = self.trainNo
+      self.misc.validNo = self.validNo
+      self.misc.testNo = self.testNo
+
 
       self.classes = assert(torch.load(classesFilePath))              -- classes
       for c = 1,self.classesNo do assert(self.classes[c]); end
@@ -263,6 +273,10 @@ function ActivityDataset:__init(opt)
          self.T = torch.Tensor(self.batchSize, self.misc.classesNo)
       else
          self.T = torch.Tensor(self.batchSize)
+      end
+
+      if opt.gpuid > 0 then                              -- if GPU is to be used
+         self.T = self.T:cuda()                                 -- move T on GPU
       end
 
       self.trainLabels = self.labels:narrow(1, 1, self.trainNo)
@@ -380,6 +394,10 @@ function ActivityDataset:__init(opt)
       self.T = torch.Tensor(self.batchSize, self.classesNo)
    else
       self.T = torch.Tensor(self.batchSize)
+   end
+
+   if opt.gpuid > 0 then
+      self.T = self.T:cuda()
    end
 
    -----------------------------------------------------------------------------
@@ -526,7 +544,7 @@ function ActivityDataset:updateBatch(subset)
    end
 
    --- Prepare targets
-   self.T:copy(self.labels:index(1, self.batchIdxs))
+   self.T:copy(self.labels:index(1, self.batchIdxs))     -- for both GPU and CPU
 
    --- Prepare images
    if self.images then

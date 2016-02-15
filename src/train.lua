@@ -13,6 +13,12 @@ require("gnuplot")                                                 -- plot error
 
 local train = function(dataset, model, criterion, opt)
 
+   if opt.gpuid > 0 then
+      require("cutorch")
+      require("cunn")
+      cutorch.setDevice(opt.gpuid)
+   end
+
    -----------------------------------------------------------------------------
    --- A. Get model's parameters and gradients
    -----------------------------------------------------------------------------
@@ -25,7 +31,7 @@ local train = function(dataset, model, criterion, opt)
    confusionMatrix = optim.ConfusionMatrix(dataset.classes)
    trainLosses = {}
    validationLosses = {}
-
+   local x_axis = torch.linspace(1, opt.maxEpochs, opt.maxEpochs)
 
    -----------------------------------------------------------------------------
    --- C. Define closure to compute loss and gradients for new batches
@@ -104,16 +110,14 @@ local train = function(dataset, model, criterion, opt)
       print(output)
       print(confusionMatrix)
 
-      print(torch.Tensor(trainLosses))
-      print(torch.Tensor(validationLosses))
-
       gnuplot.plot(
-         {'Training', torch.linspace(1, epoch, epoch) ,
-          torch.Tensor(trainLosses),  '-'},
-         {'Validation', torch.linspace(1, epoch, epoch),
-          torch.Tensor(validationLosses), '-'})
-      gnuplot.xlabel('Epoch')
-      gnuplot.ylabel('Loss')
+         {"Training", x_axis[{{1, epoch}}], torch.Tensor(trainLosses),  "-"},
+         {"Validation", x_axis[{{1, epoch}}], torch.Tensor(validationLosses),
+          "-"}
+      )
+
+      gnuplot.xlabel("Epoch")
+      gnuplot.ylabel("Loss")
       gnuplot.plotflush()
 
    end

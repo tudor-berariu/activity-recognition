@@ -9,6 +9,12 @@ require('nn')
 --------------------------------------------------------------------------------
 
 local function getModel(dataset, opt)
+
+   if opt.gpuid > 0 then
+      require("cutorch")
+      require("cunn")
+   end
+
    -----------------------------------------------------------------------------
    --- A. Check size
    -----------------------------------------------------------------------------
@@ -26,6 +32,10 @@ local function getModel(dataset, opt)
    model:add(nn.Reshape(dataset.inHeight * dataset.inWidth))
    model:add(nn.Linear(dataset.inHeight * dataset.inWidth, dataset.classesNo))
    model:add(nn.LogSoftMax())
+
+   if opt.gpuid > 0 then
+      model = model:cuda()
+   end
 
    return model
 end

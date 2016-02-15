@@ -9,6 +9,12 @@ require('nn')
 --------------------------------------------------------------------------------
 
 local function getModel(dataset, opt)
+
+   if opt.gpuid > 0 then
+      require("cutorch")
+      require("cunn")
+   end
+
    -----------------------------------------------------------------------------
    --- A. Check size
    -----------------------------------------------------------------------------
@@ -41,8 +47,6 @@ local function getModel(dataset, opt)
       height = math.floor((height - 2) / 2 + 1)
 
       mapsNo = nextMapsNo
-
-      print(mapsNo .. " x " .. height .. " x " .. width)
    end
 
    model:add(nn.Reshape(mapsNo * height * width))
@@ -50,6 +54,11 @@ local function getModel(dataset, opt)
    model:add(nn.Tanh())
    model:add(nn.Linear(mapsNo, dataset.classesNo))
    model:add(nn.LogSoftMax())
+
+   if opt.gpuid > 0 then
+      model = model:cuda()
+      if opt.verbose then print("[convnet1] Convnet model using CUDA"); end
+   end
 
    return model
 end

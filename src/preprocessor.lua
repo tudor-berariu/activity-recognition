@@ -13,6 +13,12 @@ local class = require("class")
 Preprocessor = class("Preprocessor")
 
 function Preprocessor:__init(height, width, opt)
+
+   if opt.gpuid > 0 then                            -- play the music on the GPU
+      require("cunn")
+      self:print("Playing on the GPU")
+   end
+
    self.verbose = opt.verbose
    -----------------------------------------------------------------------------
    --- A. Crop
@@ -47,26 +53,41 @@ function Preprocessor:processImage(destImg, srcImg)
    -- load needed modules
    local image = require("image")
 
-   if self.vertCrop or self.horizCrop then
+   if self.vertCrop > 0 or self.horizCrop > 0 then  -- image needs to be cropped
       local up = torch.random(1 + self.vertCrop) - 1
       local left = torch.random(1 + self.horizCrop) - 1
 
-      if self.flip and (math.random() > 0.5) then
-         image.hflip(
-            destImg,
-            image.crop(srcImg, left, up, left + self.width, up + self.height)
-         )
-      else
-         image.crop(
-            destImg, srcImg,
-            left, up,
-            left + self.width, up + self.height
-         )
+      if self.flip and (math.random() > 0.5) then       -- image will be flipped
+         if opt.gpuid > 0 then                          -- destination is on gpu
+            destImg:copy(image.hflip(
+                            image.crop(srcImg, left, up,
+                                       left + self.width, up + self.height)
+            ))
+         else                                          -- destionation is on cpu
+            image.hflip(
+               destImg,
+               image.crop(srcImg, left, up, left + self.width, up + self.height)
+            )
+         end -- if opt.gpuid
+      else                                          -- image will not be flipped
+         if opt.gpuid > 0 then                          -- destination is on gpu
+            destImg:copy(image.crop(srcImg, left, up,
+                                    left + self.width, up + self.height)
+            )
+         else                                          -- destionation is on cpu
+            image.crop(
+               destImg, srcImg, left, up, left + self.width, up + self.height
+            )
+         end -- if opt.gpuid
       end -- if flip
    else
-      if self.flip and math.random() > 0.5 then
-         image.hflip(destImg, srcImg)
-      else
+      if self.flip and math.random() > 0.5 then         -- image will be flipped
+         if opt.gpuid > 0 then                          -- destination is on gpu
+            destImg:copy(image.hflip(srcImg))
+         else                                           -- destination is on cpu
+            image.hflip(destImg, srcImg)
+         end -- if opt.gpuid
+      else                                           -- image is not transformed
          destImg:copy(srcImg)
       end -- if flip
    end -- if crop

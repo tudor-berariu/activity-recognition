@@ -1,5 +1,6 @@
 --------------------------------------------------------------------------------
 --- 1. Load required libraries
+--------------------------------------------------------------------------------
 
 require("torch")
 
@@ -51,7 +52,7 @@ cmd:option("-plot", false, "display plot during training")
 
 --- Hardware
 
-cmd:option("-gpuid", -1, "GPU id; -1 for CPU")
+cmd:option("-gpuid", -1, "NVIDIA GPU id; -1 for CPU")
 
 --- Optimization paramters
 
@@ -106,14 +107,18 @@ else
    getModel = require("models/convnet1")
 end
 
-
 model = getModel(dataset, opt)
 criterion = nn.ClassNLLCriterion()
+
+if opt.gpuid > 0 then
+   criterion = criterion:cuda()
+   model = model:cuda()
+end
 
 print(model)
 
 train(dataset, model, criterion, opt)
-evaluate(dataset, mdoel, criterion, opt)
+evaluate(dataset, model, criterion, opt)
 
 
 --------------------------------------------------------------------------------
