@@ -50,6 +50,7 @@ function Preprocessor:__init(height, width, opt)
  end
 
 function Preprocessor:processImage(destImg, srcImg)
+   print("1")
    -- load needed modules
    local image = require("image")
 

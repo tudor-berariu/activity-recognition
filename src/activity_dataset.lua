@@ -4,7 +4,7 @@
 
 require("torch")                                            -- tensor operations
 require("preprocessor")                      -- data set augmentation on the fly
-require("util")                                             -- various functions
+require("myutil")                                -- various functions
 
 --------------------------------------------------------------------------------
 --- 2. Dataset loader implementation - highly customizable
@@ -35,8 +35,8 @@ function ActivityDataset:__init(opt)
 
    local useCache = opt.useCache     -- the local variable might get overwritten
 
-   local testRatio = util.round(opt.testRatio, 2)    -- ratio to use for testing
-   local validRatio = util.round(opt.validRatio, 2)            -- ... validation
+   local testRatio = myutil.round(opt.testRatio, 2)  -- ratio to use for testing
+   local validRatio = myutil.round(opt.validRatio, 2)          -- ... validation
    local trainRatio = 1 - testRatio - validRatio                 -- ... training
 
    assert(testRatio >= 0.0 and validRatio >= 0.0 and trainRatio > 0.0)
@@ -99,8 +99,9 @@ function ActivityDataset:__init(opt)
       self.batchSize, self.fmaps, self.inHeight, self.inWidth
    )
 
-   if opt.gpuid > 0 then                                 -- if GPU is to be used
+   if opt.gpuid > 0 then                                -- if GPU is to be used
       self.X = self.X:cuda()                                    -- move X on GPU
+      print("moved to GPU")
    end
 
    -----------------------------------------------------------------------------
@@ -162,17 +163,6 @@ function ActivityDataset:__init(opt)
       classesPrefix = "all_" .. classesPrefix
       miscPrefix = "all_" .. miscPrefix
    end
-
-   --[[
-   do                                                        -- apend split info
-      local fmt = "%.2f_%.2f_%.2f_"
-      local splitInfo = fmt:format(trainRatio, validRatio, testRatio)
-      namesPrefix = splitInfo .. namesPrefix
-      imagesPrefix = splitInfo .. imagesPrefix
-      labelsPrefix = splitInfo .. labelsPrefix
-      miscPrefix = splitInfo .. miscPrefix
-   end
-   --]]
 
    do                                                -- attach scale information
       local scalePrefix = self.height .. "x" .. self.width .. "_"
@@ -244,7 +234,6 @@ function ActivityDataset:__init(opt)
       self.misc.trainNo = self.trainNo
       self.misc.validNo = self.validNo
       self.misc.testNo = self.testNo
-
 
       self.classes = assert(torch.load(classesFilePath))              -- classes
       for c = 1,self.classesNo do assert(self.classes[c]); end
@@ -357,18 +346,25 @@ function ActivityDataset:__init(opt)
             end
 
          elseif opt.allTags or cnt == 2 then
+            print("----------_")
             if not invClasses[word] then                  -- is this a new class
+               print("new class: ".. word)
+               print(self.labels:size())
                self.classesNo = self.classesNo + 1
                invClasses[word] = self.classesNo
                self.classes[self.classesNo] = word
                if opt.oneHot and self.classesNo > allocClasses then
                   self.labels =
-                     torch.cat(self.labels, torch.zeros(allocClasses), 2)
-                  allocClasses = allocClasses + allocClasses
+                     torch.cat(self.labels, torch.zeros(self.labels:size(1)), 2)
+                  allocClasses = allocClasses + 1
                end
             end
 
+            print(self.labels:size())
+            print("classesNo: " .. self.classesNo)
+
             local class = invClasses[word]                  -- the current class
+            print("Class: " .. class)
             if opt.oneHot then
                self.labels[idx][class] = 1
             else
@@ -458,11 +454,7 @@ end
 
 --------------------------------------------------------------------------------
 
---[[
-
-   set_resolution finds out the size images are scaled to
-
---]]
+--   set_resolution finds out the size images are scaled to
 
 function ActivityDataset:setResolution(originalSize, opt)
    local n = originalSize:size()
@@ -553,7 +545,7 @@ function ActivityDataset:updateBatch(subset)
             self.X[i], self.images[self.batchIdxs[i]]
          )
       end
-   else
+   else                                                             -- justNames
       for i = 1,self.batchSize do
          self.preprocessor:processImage(
             self.X[i],

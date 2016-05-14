@@ -73,7 +73,8 @@ local train = function(dataset, model, criterion, opt)
       local time = sys.clock()
       dataset:resetBatch("train")
       repeat
-         _, fs = optim.sgd(feval, w, opt)
+         configState = configState or {}
+         _, fs = optim.adam(feval, w, configState)
          trainLoss = trainLoss + fs[1]
       until dataset.epochFinished
       time = (sys.clock() - time) * 1000
